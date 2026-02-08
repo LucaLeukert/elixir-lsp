@@ -5,7 +5,7 @@ defmodule ElixirLsp do
   This library is protocol-only and use-case agnostic.
   """
 
-  alias ElixirLsp.{Message, Protocol, Server, Stream, Transport.Stdio}
+  alias ElixirLsp.{Message, Pipeline, Protocol, Responses, Server, Stream, Transport.Stdio}
 
   @spec request(String.t() | integer(), atom() | String.t(), term()) :: Message.Request.t()
   defdelegate request(id, method, params \\ nil), to: Protocol
@@ -25,6 +25,15 @@ defmodule ElixirLsp do
 
   @spec new_state() :: Stream.t()
   defdelegate new_state(), to: Protocol
+
+  @spec decode_chunks(Enumerable.t(), Stream.t()) :: Stream.t()
+  defdelegate decode_chunks(chunks, state \\ Stream.new()), to: Pipeline
+
+  @spec pipeline_messages(Stream.t()) :: Enumerable.t()
+  defdelegate pipeline_messages(stream), to: Pipeline, as: :messages
+
+  @spec initialize_response(map(), keyword()) :: map()
+  defdelegate initialize_response(capabilities, opts \\ []), to: Responses, as: :initialize
 
   @spec recv(binary(), Stream.t() | nil) ::
           {:ok, [Message.t()], Stream.t()} | {:error, term(), Stream.t()}

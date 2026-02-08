@@ -31,6 +31,8 @@ defmodule ElixirLsp.MixProject do
     [
       {:jason, "~> 1.4"},
       {:telemetry, "~> 1.2"},
+      {:nimble_options, "~> 1.1"},
+      {:phoenix_pubsub, "~> 2.1"},
       {:ex_doc, "~> 0.37", only: :dev, runtime: false}
     ]
   end

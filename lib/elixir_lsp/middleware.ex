@@ -19,8 +19,24 @@ defmodule ElixirLsp.Middleware do
   end
 
   defp invoke(module, msg, ctx, next) when is_atom(module) do
-    module.call(msg, ctx, next)
+    :telemetry.span(
+      [:elixir_lsp, :middleware, :execution],
+      %{system_time: System.system_time()},
+      fn ->
+        result = module.call(msg, ctx, next)
+        {result, %{count: 1}, %{middleware: module}}
+      end
+    )
   end
 
-  defp invoke(fun, msg, ctx, next) when is_function(fun, 3), do: fun.(msg, ctx, next)
+  defp invoke(fun, msg, ctx, next) when is_function(fun, 3) do
+    :telemetry.span(
+      [:elixir_lsp, :middleware, :execution],
+      %{system_time: System.system_time()},
+      fn ->
+        result = fun.(msg, ctx, next)
+        {result, %{count: 1}, %{middleware: :function}}
+      end
+    )
+  end
 end

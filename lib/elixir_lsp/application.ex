@@ -8,8 +8,7 @@ defmodule ElixirLsp.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: ElixirLsp.Worker.start_link(arg)
-      # {ElixirLsp.Worker, arg}
+      {ElixirLsp.PubSub, name: ElixirLsp.PubSub}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

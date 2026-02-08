@@ -9,16 +9,32 @@ defmodule ElixirLsp.Transport.Stdio do
   """
 
   @chunk_size 8192
+  @pubsub_schema [
+    name: [type: :atom, default: ElixirLsp.PubSub],
+    topic_prefix: [type: :string, default: "elixir_lsp"]
+  ]
+  @options_schema [
+    handler: [type: :atom, required: true],
+    init: [type: :any, required: false],
+    middlewares: [type: {:list, :any}, default: []],
+    request_timeout: [type: :non_neg_integer, default: 30_000],
+    mode: [type: {:in, [:content_length, :chunk]}, default: :content_length],
+    pubsub: [type: :keyword_list, required: false]
+  ]
 
   @type mode :: :content_length | :chunk
 
   @spec run(keyword()) :: no_return()
   def run(opts) do
-    handler = Keyword.fetch!(opts, :handler)
-    handler_arg = Keyword.get(opts, :init)
-    middlewares = Keyword.get(opts, :middlewares, [])
-    request_timeout = Keyword.get(opts, :request_timeout, 30_000)
-    mode = Keyword.get(opts, :mode, :content_length)
+    opts = NimbleOptions.validate!(opts, @options_schema)
+    handler = opts[:handler]
+    handler_arg = opts[:init]
+    middlewares = opts[:middlewares]
+    request_timeout = opts[:request_timeout]
+    mode = opts[:mode]
+
+    pubsub =
+      if opts[:pubsub], do: NimbleOptions.validate!(opts[:pubsub], @pubsub_schema), else: nil
 
     {:ok, server} =
       ElixirLsp.Server.start_link(
@@ -26,6 +42,7 @@ defmodule ElixirLsp.Transport.Stdio do
         handler_arg: handler_arg,
         middlewares: middlewares,
         request_timeout: request_timeout,
+        pubsub: pubsub,
         send: fn payload -> IO.binwrite(:stdio, payload) end
       )
 

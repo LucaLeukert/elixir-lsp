@@ -36,4 +36,10 @@ defmodule ElixirLsp.HandlerContext do
   def notify(%__MODULE__{server: server}, method, params \\ nil) do
     ElixirLsp.Server.send_notification(server, method, params)
   end
+
+  @spec with_cancel(t(), (-> term())) :: term() | {:error, integer(), String.t(), nil}
+  def with_cancel(ctx, fun), do: ElixirLsp.Cancellation.with_cancel(ctx, fun)
+
+  @spec check_cancel!(t()) :: :ok | no_return()
+  def check_cancel!(ctx), do: ElixirLsp.Cancellation.check_cancel!(ctx)
 end

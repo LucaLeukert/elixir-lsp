@@ -4,7 +4,7 @@ defmodule ElixirLsp.MessageTest do
   alias ElixirLsp.Message
 
   test "builds and serializes request struct" do
-    request = Message.request(1, :initialize, %{"processId" => nil})
+    request = Message.request(1, :initialize, %{process_id: nil})
 
     assert %Message.Request{id: 1, method: :initialize} = request
 
@@ -29,6 +29,16 @@ defmodule ElixirLsp.MessageTest do
              "jsonrpc" => "2.0",
              "id" => 10,
              "error" => %{"code" => -32601, "message" => "Method not found"}
+           }
+  end
+
+  test "normalizes outbound snake_case keys" do
+    response = Message.response(1, %{server_info: %{name: "x", build_id: "1"}})
+
+    assert Message.to_map(response) == %{
+             "jsonrpc" => "2.0",
+             "id" => 1,
+             "result" => %{"serverInfo" => %{"name" => "x", "buildId" => "1"}}
            }
   end
 end

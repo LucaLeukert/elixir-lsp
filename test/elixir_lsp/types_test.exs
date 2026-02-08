@@ -51,4 +51,13 @@ defmodule ElixirLsp.TypesTest do
     assert action.title == "Fix"
     assert Types.to_map(action)["title"] == "Fix"
   end
+
+  test "inspect and string chars implementations are available" do
+    {:ok, pos} = Types.Position.new(1, 2)
+    inspected = inspect(pos)
+    as_string = to_string(pos)
+
+    assert inspected =~ "ElixirLsp.Types.Position"
+    assert as_string =~ "ElixirLsp.Types.Position"
+  end
 end

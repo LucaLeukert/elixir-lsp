@@ -3,7 +3,7 @@ defmodule ElixirLsp.Message do
   Native Elixir structs for JSON-RPC/LSP messages.
   """
 
-  alias ElixirLsp.Method
+  alias ElixirLsp.{Keys, Method}
 
   defmodule Request do
     @enforce_keys [:id, :method]
@@ -89,16 +89,16 @@ defmodule ElixirLsp.Message do
   @spec to_map(t()) :: map()
   def to_map(%Request{id: id, method: method, params: params}) do
     %{"jsonrpc" => @version, "id" => id, "method" => Method.to_wire(method)}
-    |> put_optional("params", params)
+    |> put_optional("params", Keys.normalize_outbound(params))
   end
 
   def to_map(%Notification{method: method, params: params}) do
     %{"jsonrpc" => @version, "method" => Method.to_wire(method)}
-    |> put_optional("params", params)
+    |> put_optional("params", Keys.normalize_outbound(params))
   end
 
   def to_map(%Response{id: id, result: result}) do
-    %{"jsonrpc" => @version, "id" => id, "result" => result}
+    %{"jsonrpc" => @version, "id" => id, "result" => Keys.normalize_outbound(result)}
   end
 
   def to_map(%ErrorResponse{id: id, error: %Error{} = error}) do
@@ -116,7 +116,7 @@ defmodule ElixirLsp.Message do
 
   defp error_to_map(%Error{code: code, message: message, data: data}) do
     %{"code" => code, "message" => message}
-    |> put_optional("data", data)
+    |> put_optional("data", Keys.normalize_outbound(data))
   end
 
   defp put_optional(map, _key, nil), do: map

@@ -71,4 +71,10 @@ defmodule ElixirLsp.ServerTest do
     assert notification.method == :window_log_message
     assert notification.params["message"] == "hello"
   end
+
+  test "validates public options with NimbleOptions" do
+    assert_raise NimbleOptions.ValidationError, fn ->
+      Server.start_link(handler: EchoHandler)
+    end
+  end
 end

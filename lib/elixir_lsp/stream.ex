@@ -5,25 +5,28 @@ defmodule ElixirLsp.Stream do
 
   alias ElixirLsp.{Framing, Message}
 
-  defstruct buffer: ""
+  defstruct buffer: "", messages: []
 
-  @type t :: %__MODULE__{buffer: binary()}
+  @type t :: %__MODULE__{buffer: binary(), messages: [Message.t()]}
 
   @spec new() :: t()
   def new, do: %__MODULE__{}
 
   @spec push(t(), binary()) :: {:ok, [Message.t()], t()} | {:error, term(), t()}
-  def push(%__MODULE__{buffer: buffer}, chunk) when is_binary(chunk) do
+  def push(%__MODULE__{buffer: buffer, messages: acc}, chunk) when is_binary(chunk) do
     case Framing.decode(chunk, buffer) do
       {:ok, decoded_maps, rest} ->
         with {:ok, messages} <- maps_to_messages(decoded_maps) do
-          {:ok, messages, %__MODULE__{buffer: rest}}
+          {:ok, messages, %__MODULE__{buffer: rest, messages: acc ++ messages}}
         end
 
       {:error, reason} ->
-        {:error, reason, %__MODULE__{buffer: ""}}
+        {:error, reason, %__MODULE__{buffer: "", messages: acc}}
     end
   end
+
+  @spec drain(t()) :: {[Message.t()], t()}
+  def drain(%__MODULE__{} = stream), do: {stream.messages, %{stream | messages: []}}
 
   defp maps_to_messages(maps) do
     maps
