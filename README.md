@@ -33,7 +33,7 @@ It is use-case agnostic and focuses on robust protocol handling, transport, and 
 ## Install
 
 ```elixir
-{:elixir_lsp, "~> 0.2.0"}
+{:elixir_lsp, "~> 0.2.1"}
 ```
 
 ## Quick start
@@ -52,7 +52,7 @@ defmodule MyHandler do
 
   defrequest :initialize do
     with_cancel(ctx, fn ->
-      reply(ctx, ElixirLsp.Responses.initialize(%{hover_provider: true}, name: "my-lsp", version: "0.2.0"))
+      reply(ctx, ElixirLsp.Responses.initialize(%{hover_provider: true}, name: "my-lsp", version: "0.2.1"))
     end)
   end
 

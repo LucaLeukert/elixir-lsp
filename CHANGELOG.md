@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 - 2026-02-08
+## 0.2.1 - 2026-02-08
 
 - Added `use ElixirLsp.Server` defaults to reduce custom handler boilerplate.
 - Added `defrequest/2` and `defnotification/2` routing macros with pattern-friendly matching.
