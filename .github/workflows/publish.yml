@@ -35,13 +35,16 @@ jobs:
           mix local.rebar --force
 
       - name: Fetch dependencies
-        run: mix deps.get
+        run: |
+          mix deps.get
+          MIX_ENV=test mix deps.get
+          MIX_ENV=dev mix deps.get
 
       - name: Run tests
-        run: mix test
+        run: MIX_ENV=test mix test
 
       - name: Generate docs
-        run: mix docs
+        run: MIX_ENV=dev mix docs
 
       - name: Build Hex package
         run: mix hex.build
