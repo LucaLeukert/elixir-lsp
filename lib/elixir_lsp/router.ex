@@ -6,6 +6,7 @@ defmodule ElixirLsp.Router do
   defmacro __using__(_opts) do
     quote do
       import ElixirLsp.Router
+      import ElixirLsp.HandlerContext, only: [reply: 2, noreply: 1, error: 4, notify: 3, canceled?: 1]
 
       Module.register_attribute(__MODULE__, :lsp_requests, accumulate: true)
       Module.register_attribute(__MODULE__, :lsp_notifications, accumulate: true)

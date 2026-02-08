@@ -79,6 +79,7 @@ defmodule ElixirLsp.Server do
       @behaviour ElixirLsp.Server.Handler
       import ElixirLsp.Server, only: [defrequest: 2, defnotification: 2]
       import ElixirLsp.Cancellation, only: [with_cancel: 2, check_cancel!: 1]
+      import ElixirLsp.HandlerContext, only: [reply: 2, noreply: 1, error: 4, notify: 3, canceled?: 1]
 
       Module.register_attribute(__MODULE__, :lsp_request_routes, accumulate: true)
       Module.register_attribute(__MODULE__, :lsp_notification_routes, accumulate: true)
@@ -174,7 +175,7 @@ defmodule ElixirLsp.Server do
                  unquote(ctx),
                  unquote(state)
                ) do
-            _ = {unquote(id), unquote(ctx), unquote(state)}
+            _ = {unquote(id), unquote(params), unquote(ctx), unquote(state)}
             unquote(block)
           end
         end
@@ -204,7 +205,7 @@ defmodule ElixirLsp.Server do
                  unquote(ctx),
                  unquote(state)
                ) do
-            _ = {unquote(ctx), unquote(state)}
+            _ = {unquote(params), unquote(ctx), unquote(state)}
             unquote(block)
           end
         end

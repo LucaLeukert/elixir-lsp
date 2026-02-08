@@ -52,10 +52,7 @@ defmodule MyHandler do
 
   defrequest :initialize do
     with_cancel(ctx, fn ->
-      ElixirLsp.HandlerContext.reply(
-        ctx,
-        ElixirLsp.Responses.initialize(%{hover_provider: true}, name: "my-lsp", version: "0.2.0")
-      )
+      reply(ctx, ElixirLsp.Responses.initialize(%{hover_provider: true}, name: "my-lsp", version: "0.2.0"))
     end)
   end
 
@@ -81,7 +78,7 @@ defmodule MyHandler do
   end
 
   on_request :initialize do
-    ElixirLsp.HandlerContext.reply(ctx, %{
+    reply(ctx, %{
       "capabilities" => __MODULE__.server_capabilities()
     })
   end

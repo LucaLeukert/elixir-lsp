@@ -8,20 +8,18 @@ defmodule ElixirLsp.ServerDslTest do
 
     defrequest :initialize do
       with_cancel(ctx, fn ->
-        ElixirLsp.HandlerContext.reply(
-          ctx,
-          ElixirLsp.Responses.initialize(%{hover_provider: true}, name: "dsl")
-        )
+        notify(ctx, :window_log_message, %{type: 3, message: "init"})
+        reply(ctx, ElixirLsp.Responses.initialize(%{hover_provider: true}, name: "dsl"))
       end)
     end
 
     defnotification :text_document_did_open do
       check_cancel!(ctx)
-      {:ok, Map.put(state, :opened, params)}
+      {:ok, state |> Map.put(:opened, params) |> Map.put(:canceled, canceled?(ctx))}
     end
   end
 
-  test "defrequest routes and builds initialize response" do
+  test "defrequest routes, helper imports, and builds initialize response" do
     parent = self()
 
     {:ok, server} =
@@ -33,10 +31,32 @@ defmodule ElixirLsp.ServerDslTest do
     req = Protocol.request(10, :initialize, %{}) |> Protocol.encode() |> IO.iodata_to_binary()
     Server.feed(server, req)
 
-    assert_receive {:outbound, payload}, 500
+    assert_receive {:outbound, payload_a}, 500
+    assert_receive {:outbound, payload_b}, 500
 
-    assert {:ok, [%Message.Response{result: result}], _} =
-             Protocol.decode(payload, Protocol.new_state())
+    payloads = [payload_a, payload_b]
+
+    decoded =
+      Enum.flat_map(payloads, fn payload ->
+        assert {:ok, messages, _} = Protocol.decode(payload, Protocol.new_state())
+        messages
+      end)
+
+    assert Enum.any?(decoded, fn
+             %Message.Notification{method: :window_log_message, params: %{"message" => "init"}} ->
+               true
+
+             _ ->
+               false
+           end)
+
+    response =
+      Enum.find(decoded, fn
+        %Message.Response{} -> true
+        _ -> false
+      end)
+
+    assert %Message.Response{result: result} = response
 
     assert result["capabilities"]["hoverProvider"] == true
     assert result["serverInfo"]["name"] == "dsl"

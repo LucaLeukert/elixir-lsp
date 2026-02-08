@@ -12,7 +12,7 @@ defmodule ElixirLsp.RouterTest do
     end
 
     on_request :initialize do
-      ElixirLsp.HandlerContext.reply(ctx, %{"capabilities" => __MODULE__.server_capabilities()})
+      reply(ctx, %{"capabilities" => __MODULE__.server_capabilities()})
     end
 
     on_request :text_document_hover do
