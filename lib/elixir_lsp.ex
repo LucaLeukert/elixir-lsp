@@ -5,7 +5,7 @@ defmodule ElixirLsp do
   This library is protocol-only and use-case agnostic.
   """
 
-  alias ElixirLsp.{Message, Protocol, Server, Stream}
+  alias ElixirLsp.{Message, Protocol, Server, Stream, Transport.Stdio}
 
   @spec request(String.t() | integer(), atom() | String.t(), term()) :: Message.Request.t()
   defdelegate request(id, method, params \\ nil), to: Protocol
@@ -32,4 +32,7 @@ defmodule ElixirLsp do
 
   @spec child_spec(keyword()) :: Supervisor.child_spec()
   defdelegate child_spec(opts), to: Server
+
+  @spec run_stdio(keyword()) :: no_return()
+  defdelegate run_stdio(opts), to: Stdio, as: :run
 end

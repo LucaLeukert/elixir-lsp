@@ -18,4 +18,37 @@ defmodule ElixirLsp.TypesTest do
     assert Types.WorkspaceEdit.to_map(ws_edit)["changes"]["file:///a.ex"] |> length() == 1
     assert Types.CodeAction.to_map(action)["kind"] == "quickfix"
   end
+
+  test "coerces maps into typed structs" do
+    map = %{
+      "title" => "Fix",
+      "kind" => "quickfix",
+      "diagnostics" => [
+        %{
+          "range" => %{
+            "start" => %{"line" => 0, "character" => 0},
+            "end" => %{"line" => 0, "character" => 1}
+          },
+          "message" => "Issue"
+        }
+      ],
+      "edit" => %{
+        "changes" => %{
+          "file:///a.ex" => [
+            %{
+              "range" => %{
+                "start" => %{"line" => 0, "character" => 0},
+                "end" => %{"line" => 0, "character" => 1}
+              },
+              "newText" => "x"
+            }
+          ]
+        }
+      }
+    }
+
+    assert {:ok, %Types.CodeAction{} = action} = Types.from_map(Types.CodeAction, map)
+    assert action.title == "Fix"
+    assert Types.to_map(action)["title"] == "Fix"
+  end
 end

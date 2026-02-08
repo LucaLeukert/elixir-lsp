@@ -4,9 +4,17 @@ defmodule ElixirLsp.State do
 
   Includes open document tracking, URI/path conversion, workspace folders,
   and text synchronization helpers for didOpen/didChange/didClose.
+
+  Lifecycle mode:
+
+  - `:lenient` (default): ignore out-of-order lifecycle events such as
+    `didChange` for unopened documents.
+  - `:strict`: raise on out-of-order lifecycle events.
   """
 
-  defstruct documents: %{}, workspace_folders: []
+  @type mode :: :lenient | :strict
+
+  defstruct documents: %{}, workspace_folders: [], mode: :lenient
 
   @type document :: %{
           text: String.t(),
@@ -16,11 +24,20 @@ defmodule ElixirLsp.State do
 
   @type t :: %__MODULE__{
           documents: %{optional(String.t()) => document()},
-          workspace_folders: [map()]
+          workspace_folders: [map()],
+          mode: mode()
         }
 
-  @spec new() :: t()
-  def new, do: %__MODULE__{}
+  @spec new(keyword()) :: t()
+  def new(opts \\ []) do
+    mode = Keyword.get(opts, :mode, :lenient)
+
+    if mode in [:lenient, :strict] do
+      %__MODULE__{mode: mode}
+    else
+      raise ArgumentError, "invalid mode #{inspect(mode)}. expected :lenient or :strict"
+    end
+  end
 
   @spec open_document(t(), String.t(), String.t(), integer() | nil, String.t() | nil) :: t()
   def open_document(%__MODULE__{} = state, uri, text, version, language_id) do
@@ -67,7 +84,7 @@ defmodule ElixirLsp.State do
       when is_list(changes) do
     case get_document(state, uri) do
       nil ->
-        state
+        lifecycle_mismatch(state, :did_change_without_open, %{uri: uri})
 
       doc ->
         next_text = Enum.reduce(changes, doc.text, &apply_change/2)
@@ -79,7 +96,11 @@ defmodule ElixirLsp.State do
   def apply_text_sync(%__MODULE__{} = state, :text_document_did_close, %{
         "textDocument" => %{"uri" => uri}
       }) do
-    close_document(state, uri)
+    if get_document(state, uri) do
+      close_document(state, uri)
+    else
+      lifecycle_mismatch(state, :did_close_without_open, %{uri: uri})
+    end
   end
 
   def apply_text_sync(%__MODULE__{} = state, _method, _params), do: state
@@ -101,6 +122,13 @@ defmodule ElixirLsp.State do
   end
 
   defp apply_workspace_sync(%__MODULE__{} = state, _method, _params), do: state
+
+  defp lifecycle_mismatch(%__MODULE__{mode: :lenient} = state, _reason, _meta), do: state
+
+  defp lifecycle_mismatch(%__MODULE__{mode: :strict}, reason, meta) do
+    raise ArgumentError,
+          "LSP lifecycle mismatch #{inspect(reason)}: #{inspect(meta)}"
+  end
 
   defp apply_change(%{"text" => text} = change, original) do
     case Map.get(change, "range") do

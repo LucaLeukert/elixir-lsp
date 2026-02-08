@@ -18,6 +18,7 @@ defmodule ElixirLsp.Router do
 
       @impl true
       def init(arg), do: {:ok, arg}
+
       defoverridable init: 1
     end
   end
@@ -52,6 +53,28 @@ defmodule ElixirLsp.Router do
     end
   end
 
+  @doc false
+  def normalize_request_result(result, state) do
+    case result do
+      {:reply, payload} -> {:reply, payload, state}
+      {:reply, payload, next_state} -> {:reply, payload, next_state}
+      {:error, code, message, data} -> {:error, code, message, data, state}
+      {:error, code, message, data, next_state} -> {:error, code, message, data, next_state}
+      {:noreply} -> {:noreply, state}
+      {:noreply, next_state} -> {:noreply, next_state}
+      other -> raise ArgumentError, "unsupported on_request return: #{inspect(other)}"
+    end
+  end
+
+  @doc false
+  def normalize_notification_result(result, state) do
+    case result do
+      {:ok} -> {:ok, state}
+      {:ok, next_state} -> {:ok, next_state}
+      other -> raise ArgumentError, "unsupported on_notification return: #{inspect(other)}"
+    end
+  end
+
   defmacro __before_compile__(env) do
     requests = Module.get_attribute(env.module, :lsp_requests) |> Enum.reverse()
     notifications = Module.get_attribute(env.module, :lsp_notifications) |> Enum.reverse()
@@ -64,11 +87,22 @@ defmodule ElixirLsp.Router do
         params = Macro.var(:params, nil)
         ctx = Macro.var(:ctx, nil)
         state = Macro.var(:state, nil)
-        block = bind_vars(block, %{params: params, ctx: ctx, state: state})
+
+        block =
+          bind_vars(block, %{
+            params: params,
+            _params: params,
+            ctx: ctx,
+            _ctx: ctx,
+            state: state,
+            _state: state
+          })
 
         quote do
-          defp __route_request__(unquote(method), unquote(params), unquote(ctx), unquote(state)),
-            do: unquote(block)
+          defp __route_request__(unquote(method), unquote(params), unquote(ctx), unquote(state)) do
+            _ = {unquote(params), unquote(ctx), unquote(state)}
+            unquote(block)
+          end
         end
       end
 
@@ -77,7 +111,16 @@ defmodule ElixirLsp.Router do
         params = Macro.var(:params, nil)
         ctx = Macro.var(:ctx, nil)
         state = Macro.var(:state, nil)
-        block = bind_vars(block, %{params: params, ctx: ctx, state: state})
+
+        block =
+          bind_vars(block, %{
+            params: params,
+            _params: params,
+            ctx: ctx,
+            _ctx: ctx,
+            state: state,
+            _state: state
+          })
 
         quote do
           defp __route_notification__(
@@ -85,8 +128,10 @@ defmodule ElixirLsp.Router do
                  unquote(params),
                  unquote(ctx),
                  unquote(state)
-               ),
-               do: unquote(block)
+               ) do
+            _ = {unquote(params), unquote(ctx), unquote(state)}
+            unquote(block)
+          end
         end
       end
 
@@ -94,9 +139,13 @@ defmodule ElixirLsp.Router do
       if catch_req do
         bind_vars(catch_req, %{
           method: Macro.var(:method, nil),
+          _method: Macro.var(:method, nil),
           params: Macro.var(:params, nil),
+          _params: Macro.var(:params, nil),
           ctx: Macro.var(:ctx, nil),
-          state: Macro.var(:state, nil)
+          _ctx: Macro.var(:ctx, nil),
+          state: Macro.var(:state, nil),
+          _state: Macro.var(:state, nil)
         })
       else
         quote do
@@ -108,9 +157,13 @@ defmodule ElixirLsp.Router do
       if catch_notif do
         bind_vars(catch_notif, %{
           method: Macro.var(:method, nil),
+          _method: Macro.var(:method, nil),
           params: Macro.var(:params, nil),
+          _params: Macro.var(:params, nil),
           ctx: Macro.var(:ctx, nil),
-          state: Macro.var(:state, nil)
+          _ctx: Macro.var(:ctx, nil),
+          state: Macro.var(:state, nil),
+          _state: Macro.var(:state, nil)
         })
       else
         quote do
@@ -133,15 +186,9 @@ defmodule ElixirLsp.Router do
 
       @impl true
       def handle_request(method, params, _id, ctx, state) do
-        case __route_request__(method, params, ctx, state) do
-          {:reply, result} -> {:reply, result, state}
-          {:error, code, message, data} -> {:error, code, message, data, state}
-          {:noreply} -> {:noreply, state}
-          {:reply, result, next_state} -> {:reply, result, next_state}
-          {:error, code, message, data, next_state} -> {:error, code, message, data, next_state}
-          {:noreply, next_state} -> {:noreply, next_state}
-          other -> raise ArgumentError, "unsupported on_request return: #{inspect(other)}"
-        end
+        method
+        |> __route_request__(params, ctx, state)
+        |> ElixirLsp.Router.normalize_request_result(state)
       end
 
       @impl true
@@ -152,11 +199,9 @@ defmodule ElixirLsp.Router do
 
       @impl true
       def handle_notification(method, params, ctx, state) do
-        case __route_notification__(method, params, ctx, state) do
-          {:ok, next_state} -> {:ok, next_state}
-          {:ok} -> {:ok, state}
-          other -> raise ArgumentError, "unsupported on_notification return: #{inspect(other)}"
-        end
+        method
+        |> __route_notification__(params, ctx, state)
+        |> ElixirLsp.Router.normalize_notification_result(state)
       end
 
       def server_capabilities, do: unquote(Macro.escape(caps))

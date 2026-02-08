@@ -34,4 +34,29 @@ defmodule ElixirLsp.StateTest do
 
     assert State.get_document(state, uri) == nil
   end
+
+  test "lenient mode ignores didChange without didOpen" do
+    uri = "file:///tmp/missing.ex"
+
+    state =
+      State.new(mode: :lenient)
+      |> State.apply_notification(:text_document_did_change, %{
+        "textDocument" => %{"uri" => uri, "version" => 1},
+        "contentChanges" => [%{"text" => "abc"}]
+      })
+
+    assert State.get_document(state, uri) == nil
+  end
+
+  test "strict mode raises on didChange without didOpen" do
+    uri = "file:///tmp/missing.ex"
+
+    assert_raise ArgumentError, ~r/did_change_without_open/, fn ->
+      State.new(mode: :strict)
+      |> State.apply_notification(:text_document_did_change, %{
+        "textDocument" => %{"uri" => uri, "version" => 1},
+        "contentChanges" => [%{"text" => "abc"}]
+      })
+    end
+  end
 end

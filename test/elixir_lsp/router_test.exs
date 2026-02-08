@@ -16,7 +16,7 @@ defmodule ElixirLsp.RouterTest do
     end
 
     on_request :text_document_hover do
-      {:reply, %{"contents" => "hover"}, state}
+      {:reply, %{"contents" => "hover"}, _state}
     end
 
     on_notification :text_document_did_open do
