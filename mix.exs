@@ -1,18 +1,25 @@
 defmodule ElixirLsp.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+  @source_url "https://github.com/LucaLeukert/elixir-lsp"
+
   def project do
     [
       app: :elixir_lsp,
-      version: "0.1.0",
-      description: "Protocol-focused LSP building blocks for Elixir",
+      version: @version,
+      description: description(),
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      package: package(),
+      docs: docs(),
+      source_url: @source_url,
+      homepage_url: @source_url,
+      name: "ElixirLsp"
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
   def application do
     [
       extra_applications: [:logger],
@@ -20,11 +27,35 @@ defmodule ElixirLsp.MixProject do
     ]
   end
 
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       {:jason, "~> 1.4"},
-      {:telemetry, "~> 1.2"}
+      {:telemetry, "~> 1.2"},
+      {:ex_doc, "~> 0.37", only: :dev, runtime: false}
+    ]
+  end
+
+  defp description do
+    "Elixir-native, protocol-focused Language Server Protocol toolkit."
+  end
+
+  defp package do
+    [
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => @source_url,
+        "HexDocs" => "https://hexdocs.pm/elixir_lsp"
+      },
+      files: ~w(lib mix.exs README.md LICENSE CHANGELOG.md .formatter.exs)
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      extras: ["README.md", "CHANGELOG.md", "LICENSE"],
+      source_ref: "v#{@version}",
+      source_url: @source_url
     ]
   end
 end
