@@ -1,0 +1,21 @@
+defmodule ElixirLsp.TypesTest do
+  use ExUnit.Case, async: true
+
+  alias ElixirLsp.Types
+
+  test "builds diagnostic and code action maps" do
+    {:ok, start_pos} = Types.Position.new(0, 0)
+    {:ok, end_pos} = Types.Position.new(0, 5)
+    {:ok, range} = Types.Range.new(start_pos, end_pos)
+    {:ok, diagnostic} = Types.Diagnostic.new(range, "Issue", severity: 2, source: "elixir-lsp")
+    {:ok, edit} = Types.TextEdit.new(range, "fixed")
+    {:ok, ws_edit} = Types.WorkspaceEdit.new(%{"file:///a.ex" => [edit]})
+
+    {:ok, action} =
+      Types.CodeAction.new("Fix", kind: "quickfix", diagnostics: [diagnostic], edit: ws_edit)
+
+    assert Types.Diagnostic.to_map(diagnostic)["message"] == "Issue"
+    assert Types.WorkspaceEdit.to_map(ws_edit)["changes"]["file:///a.ex"] |> length() == 1
+    assert Types.CodeAction.to_map(action)["kind"] == "quickfix"
+  end
+end
