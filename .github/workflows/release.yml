@@ -1,17 +1,19 @@
-name: Test, Docs, Build, Publish
+name: Release to Hex
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types:
+      - published
 
 jobs:
-  test-docs-build-publish:
+  publish:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout release tag
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
 
       - name: Setup Elixir and OTP
         uses: erlef/setup-beam@v1
@@ -29,14 +31,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-mix-
 
-      - name: Install Hex and Rebar
+      - name: Install Hex, Rebar, and ExDoc archive
         run: |
           mix local.hex --force
           mix local.rebar --force
+          mix archive.install hex ex_doc --force
 
       - name: Fetch dependencies
         run: |
-          mix deps.get
           MIX_ENV=test mix deps.get
           MIX_ENV=dev mix deps.get
 
