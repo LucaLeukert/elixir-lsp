@@ -49,3 +49,10 @@ jobs:
 
       - name: Build Hex package
         run: mix hex.build
+
+      - name: Upload Hex package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hex-package-${{ github.sha }}
+          path: "*.tar"
+          if-no-files-found: error
