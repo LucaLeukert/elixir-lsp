@@ -29,11 +29,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-mix-
 
-      - name: Install Hex, Rebar, and ExDoc archive
+      - name: Install Hex and Rebar
         run: |
           mix local.hex --force
           mix local.rebar --force
-          mix archive.install hex ex_doc --force
 
       - name: Fetch dependencies
         run: |
@@ -44,7 +43,9 @@ jobs:
         run: MIX_ENV=test mix test
 
       - name: Generate docs
-        run: MIX_ENV=dev mix docs
+        run: |
+          MIX_ENV=dev mix deps.get
+          MIX_ENV=dev mix docs
 
       - name: Build Hex package
         run: mix hex.build
